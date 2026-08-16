@@ -143,3 +143,55 @@ test('resolveConfig 默认 maxGuardRetries=2,可覆盖', () => {
   const c2 = resolveConfig({ guard: { maxGuardRetries: 5 } });
   assert.equal(c2.guard.maxGuardRetries, 5);
 });
+
+test('autoRetryErrors:白名单内的上游错误(如 PI_AI_ERROR)自动重试', async () => {
+  const ctx = createCtx();
+  applyGuardRecovery(ctx, { maxGuardRetries: 2, autoRetryErrors: ['PI_AI_ERROR'] });
+  const listener = ctx._listeners('agent/request-error')[0];
+  const next = async () => undefined;
+  const payload = errorPayload({ failure: { message: 'Upstream request failed', code: 'PI_AI_ERROR' } });
+  assert.deepEqual(await listener(payload, next), { kind: 'retry' }, 'PI_AI_ERROR 第 1 次应重试');
+  assert.deepEqual(await listener(payload, next), { kind: 'retry' }, '第 2 次应重试');
+  assert.equal(await listener(payload, next), undefined, '第 3 次超限停止');
+  assert.ok(ctx._logs.some((l) => l[1].includes('请求失败(PI_AI_ERROR)')), '日志应标注请求失败类型');
+});
+
+test('autoRetryErrors 之外的上游错误:不干预', async () => {
+  const ctx = createCtx();
+  applyGuardRecovery(ctx, { maxGuardRetries: 2, autoRetryErrors: ['PI_AI_ERROR'] });
+  const listener = ctx._listeners('agent/request-error')[0];
+  let nextCalled = 0;
+  const r = await listener(
+    errorPayload({ failure: { message: 'x', code: 'OTHER_UPSTREAM_ERROR' } }),
+    async () => { nextCalled++; return undefined; }
+  );
+  assert.equal(nextCalled, 1, '白名单外交给下游');
+  assert.equal(r, undefined);
+});
+
+test('REASONING_GUARD 恒可重试(autoRetryErrors 不含它也生效)', async () => {
+  const ctx = createCtx();
+  applyGuardRecovery(ctx, { maxGuardRetries: 1, autoRetryErrors: [] }); // 白名单空
+  const listener = ctx._listeners('agent/request-error')[0];
+  const r = await listener(errorPayload(), async () => undefined);
+  assert.deepEqual(r, { kind: 'retry' }, 'REASONING_GUARD 不受 autoRetryErrors 影响');
+});
+
+test('持久错误(AUTH/QUOTA)永不自动重试', async () => {
+  const ctx = createCtx();
+  applyGuardRecovery(ctx, { maxGuardRetries: 2, autoRetryErrors: ['PI_AI_ERROR'] });
+  const listener = ctx._listeners('agent/request-error')[0];
+  for (const code of ['AUTH', 'QUOTA', 'INVALID_CREDENTIAL', 'CONTEXT_WINDOW_EXCEEDED']) {
+    let nextCalled = 0;
+    const r = await listener(errorPayload({ failure: { message: 'x', code } }), async () => { nextCalled++; return undefined; });
+    assert.equal(nextCalled, 1, `${code} 应交由下游`);
+    assert.equal(r, undefined);
+  }
+});
+
+test('resolveConfig 默认 autoRetryErrors=[PI_AI_ERROR],可覆盖', () => {
+  const c = resolveConfig({});
+  assert.deepEqual(c.guard.autoRetryErrors, ['PI_AI_ERROR']);
+  const c2 = resolveConfig({ guard: { autoRetryErrors: ['X_ERROR'] } });
+  assert.deepEqual(c2.guard.autoRetryErrors, ['X_ERROR']);
+});
