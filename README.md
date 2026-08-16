@@ -13,6 +13,7 @@
 | 能力 | 方向 | 说明 |
 |------|------|------|
 | **guard(刹车)** | 拦截推理死循环 | 监听 `llm/stream` 流,滑动窗口重复率检测 + 硬性上限双保险,死循环在 **1~2 秒内被中断**(而非空转数分钟);中断后**自动重试**(默认每 turn 2 次,可配),仍失败才停止并给出中文原因提示 |
+| **recovery(恢复)** | 上游请求失败自动重试 | `PI_AI_ERROR` 等瞬时上游失败(不在 llm-retry 默认集合的)也自动重试(白名单可扩展),与 guard 共用每 turn 上限 |
 | **continue(油门)** | 防止提前停摆 | turn 正常结束后自动续跑:有未完成 todo 时注入状态续跑;无 todo 但模型「想完就停」(最后只有推理、无正文无工具调用)时注入简洁提示续跑 |
 | **pause_work 暂停** | 人工控制 | 模型可随时调用 `pause_work` 工具主动暂停,两路都不会再自动继续 |
 
@@ -38,8 +39,9 @@ DeepSeek Harness 的 agent loop 本身对这两种异常都没有调控机制。
                                             │ 触发:注入 REASONING_GUARD 错误中断
                                             ▼
                                    agent/request-error 恢复扩展点
+                                            │ 错误码 ∈ {REASONING_GUARD} ∪ autoRetryErrors 且
                                             │ 该 turn 重试 < maxGuardRetries → 自动重跑 step
-                                            └─ 超限 → turn 以 error 结束(用户可见,可手动继续)
+                                            └─ 超限或非可重试错误 → turn 以 error 结束(用户可见)
                                             ▲
                                             │ 天然抑制:continue 只在 completed 触发
                                             │
@@ -96,7 +98,8 @@ dsh plugin --profile web add "github:Dis2017/dsh-run-guard#v0.1.2"
 | `guard.checkEvery` | `50` | 每 N 块检测一次(降频) |
 | `guard.maxBlocks` | `10000` | 硬闸:单次调用推理块数上限 |
 | `guard.maxChars` | `500000` | 硬闸:单次调用推理字符数上限 |
-| `guard.maxGuardRetries` | `2` | 死循环中断后每 turn 自动重试次数上限(0 禁用) |
+| `guard.maxGuardRetries` | `2` | 中断后每 turn 自动重试次数上限(0 禁用) |
+| `guard.autoRetryErrors` | `["PI_AI_ERROR"]` | 额外自动重试的错误码白名单(REASONING_GUARD 恒重试);瞬时上游错误可加入 |
 | `continue.enabled` | `true` | 自动继续开关 |
 | `continue.maxAutoFollowups` | `3` | 有 todo 场景连续无产出续跑上限 |
 
@@ -112,7 +115,7 @@ pnpm test
 54 个单元/集成测试,覆盖:
 
 - **guard 检测器**:死循环触发、正常流不误报、硬闸、滑动窗口精确性、极端配置
-- **中断恢复**:自动重试、超限停止、turn 隔离、非 guard 错误不干预
+- **中断恢复**:guard/上游错误自动重试、超限停止、turn 隔离、白名单外与持久错误不干预
 - **流拦截**:透传、中断、顺序保持、退化降级
 - **continue**:todo 续跑、想完就停续跑、暂停抑制、计数上限、UI 投影恢复
 - **两 half 集成**:guard 中断不误推、continue 推进的新 turn 死循环被拦截
