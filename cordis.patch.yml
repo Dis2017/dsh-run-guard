@@ -1,0 +1,9 @@
+# dsh-run-guard bundle patch
+#
+# Mount declaration for the run-rhythm guard plugin (merged from
+# dsh-reasoning-guard + todo-continue). The `llm/stream` waterfall listener
+# intercepts reasoning dead loops; the session/event + systemPrompt + tools
+# machinery continues turns that stopped prematurely.
+- insert:
+    - id: run-guard
+      name: 'dsh-run-guard'
