@@ -1,6 +1,6 @@
 {
   "name": "dsh-run-guard",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Agent run-rhythm guard for DeepSeek Harness: reasoning dead-loop interception (guard) + automatic continuation after premature stops (continue)",
   "type": "module",
   "main": "./lib/index.js",

@@ -13,7 +13,15 @@ DeepSeek Harness (dsh) 插件:**Agent 运行节奏守护**——刹车 + 油门�
 
 ## 安装
 
-本地开发(绝对路径挂载):
+### 发布版(GitHub 安装,推荐)
+
+```bash
+dsh plugin --profile web add "github:Dis2017/dsh-run-guard#v0.1.2"
+```
+
+`dsh plugin add` 检测到 `dsh.bundle` 声明后自动挂载(追加进 profile 的 bundles 列表),插件行由 bundle patch 提供。
+
+### 开发模式(绝对路径挂载,改代码即时生效)
 
 ```yaml
 # ~/.dsh/profiles/web/cordis.patch.yml
@@ -22,7 +30,9 @@ DeepSeek Harness (dsh) 插件:**Agent 运行节奏守护**——刹车 + 油门�
       name: /绝对/路径/dsh-run-guard/lib/index.js?v=1
 ```
 
-依赖自包含在插件目录(`pnpm install`),不污染 profile 的 node_modules——`@deepseek-ai/*` 的运行时实例由 dsh 主程序/插件目录提供,避免双实例破坏 Symbol 单例。
+### 依赖约定(重要)
+
+`@deepseek-ai/*` 全部声明在 **peerDependencies**(由 dsh 主程序提供单例)——绝不能放进 `dependencies`,否则 pnpm(hoisted)会把它提升到 profile 顶层 node_modules,形成第二份实例,破坏 DSH 的 Symbol 单例(`TOOL_RUNTIME_SCHEDULER`),导致 `Cannot read properties of undefined (reading 'prepare')`。业务依赖(裸 `schemastery` 等)放 `dependencies`;测试用的 dsh 依赖放 `devDependencies`(不随安装)。
 
 ## 配置
 
