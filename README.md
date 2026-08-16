@@ -73,7 +73,8 @@ dsh plugin --profile web add "github:Dis2017/dsh-run-guard#v0.1.2"
 
 1. 重启 GUI
 2. 打开 **设置 → 插件 → Plugin list**,确认 `dsh-run-guard` 为 **Mounted / Enabled**
-3. 正常使用:死循环会被 1~2 秒内中断并显示原因;「想完就停」后会自动收到续跑提示
+3. 打开 **设置 → Run guard**,可编辑全部配置项(总开关 / Guard 死循环拦截 / Continue 自动继续),保存后落盘、重启生效
+4. 正常使用:死循环会被 1~2 秒内中断并自动重试(页面可见);「想完就停」后会自动收到续跑提示
 
 ### 开发模式(绝对路径挂载,改代码即时生效)
 
