@@ -14,6 +14,7 @@ function createCtx({ settingsValue, registerThrows = false } = {}) {
   const contextDefs = [];
   const tools = [];
   const registered = [];
+  const routeDefs = [];
   const ctx = {
     logger: { warn: () => {}, info: () => {} },
     on(name, fn) {
@@ -29,6 +30,9 @@ function createCtx({ settingsValue, registerThrows = false } = {}) {
     inject(deps, callback) {
       if (deps.includes('settings')) callback(this);
     },
+    webServer: {
+      register: (def) => routeDefs.push(def),
+    },
     settings: {
       register(ns, schema) {
         if (registerThrows) throw new Error('namespace already registered');
@@ -40,12 +44,31 @@ function createCtx({ settingsValue, registerThrows = false } = {}) {
           replace: async () => {},
         };
       },
+      describe: () => [
+        { ns: 'run-guard', value: settingsValue ?? {}, revision: 1 },
+      ],
+      mutate: async (nsName, ops) => {
+        // 应用路径编辑到 settingsValue(浅层模拟)
+        for (const op of ops) {
+          if (op.op === 'set') {
+            const path = op.path;
+            let cur = settingsValue;
+            for (let i = 0; i < path.length - 1; i++) {
+              if (cur[path[i]] === undefined) cur[path[i]] = {};
+              cur = cur[path[i]];
+            }
+            cur[path[path.length - 1]] = op.value;
+          }
+        }
+        return {};
+      },
     },
     _listeners(name) {
       return listeners.get(name) ?? [];
     },
     _registered: registered,
     _tools: tools,
+    _routes: routeDefs,
   };
   return ctx;
 }
@@ -120,4 +143,45 @@ test('无 inject 方法:直接使用 config 参数', () => {
   apply(ctx, resolveConfig({ guard: { enabled: false } }));
   assert.equal(ctx._listeners('llm/stream').length, 0, 'guard 关闭不挂载');
   assert.ok(ctx._listeners('session/event').length >= 1, 'continue 仍挂载');
+});
+
+
+test('有 webServer 时:注册 /run-guard/api 设置路由', () => {
+  const ctx = createCtx({ settingsValue: {} });
+  apply(ctx, resolveConfig({}));
+  assert.equal(ctx._routes.length, 1, '应注册设置路由');
+  assert.equal(ctx._routes[0].kind, 'prefix');
+  assert.equal(ctx._routes[0].path, '/run-guard/api');
+  assert.equal(typeof ctx._routes[0].handler, 'function');
+});
+
+test('路由 handler:settings.get 返回当前值(revision)', async () => {
+  const ctx = createCtx({ settingsValue: { guard: { maxGuardRetries: 4 } } });
+  apply(ctx, resolveConfig({}));
+  const handler = ctx._routes[0].handler;
+  // 模拟请求
+  const req = {
+    method: 'POST',
+    url: 'http://dsh.internal/run-guard/api/settings.get',
+    [Symbol.asyncIterator]() {
+      const body = JSON.stringify({});
+      let sent = false;
+      return {
+        next: async () => {
+          if (sent) return { done: true, value: undefined };
+          sent = true;
+          return { done: false, value: body };
+        },
+      };
+    },
+  };
+  let responseBody;
+  const res = {
+    writeHead: (status, headers) => { res.status = status; },
+    end: (payload) => { responseBody = JSON.parse(payload); },
+  };
+  await handler(req, res);
+  assert.equal(res.status, 200);
+  assert.equal(responseBody.ok, true);
+  assert.equal(responseBody.value.value.guard.maxGuardRetries, 4);
 });
