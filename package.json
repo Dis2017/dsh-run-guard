@@ -24,7 +24,7 @@
     "guard",
     "continue"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": {
     "schemastery": "3.18.0"
   },

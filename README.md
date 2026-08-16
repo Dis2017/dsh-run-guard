@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/Dis2017/dsh-run-guard?style=flat-square)](https://github.com/Dis2017/dsh-run-guard)
 [![dsh-plugin](https://img.shields.io/badge/ecosystem-dsh--plugin-blue?style=flat-square)](https://github.com/topics/dsh-plugin)
-[![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 ---
 
@@ -175,4 +175,4 @@ dsh plugin --profile web add "github:Dis2017/dsh-run-guard#v0.1.3"   # 或 remov
 
 ## 📄 许可证
 
-**UNLICENSED**(保留所有权利)。发布前建议更换为开源许可证(如 MIT / Apache-2.0),欢迎在 Issue 中讨论。
+[MIT](LICENSE) © 2026 Dis2017
