@@ -64,7 +64,7 @@ turn/end (completed) ──► [continue] 有 todo → 注入状态续跑(计数
 ### 安装(GitHub 发布版,推荐)
 
 ```bash
-dsh plugin --profile web add "github:Dis2017/dsh-run-guard#v0.1.2"
+dsh plugin --profile web add "github:Dis2017/dsh-run-guard#v0.1.16"
 ```
 
 `dsh plugin add` 检测到包内 `dsh.bundle` 声明后自动挂载:追加进 profile 的 bundles 列表,插件行由 bundle patch 提供。
