@@ -1,6 +1,6 @@
 {
   "name": "dsh-run-guard",
-  "version": "0.1.2",
+  "version": "0.1.18",
   "description": "Agent run-rhythm guard for DeepSeek Harness: reasoning dead-loop interception (guard) + automatic continuation after premature stops (continue)",
   "type": "module",
   "main": "./lib/index.js",
@@ -32,10 +32,10 @@
     "schemastery": "3.18.0"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-settings": "0.1.0-rc.6"
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-llm": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-settings": "0.1.2-rc.1"
   },
   "dsh": {
     "bundle": {
@@ -52,8 +52,8 @@
     }
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-settings": "0.1.0-rc.6"
+    "@deepseek-ai/dsh-tools": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-llm": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-settings": "0.1.2-rc.1"
   }
 }
